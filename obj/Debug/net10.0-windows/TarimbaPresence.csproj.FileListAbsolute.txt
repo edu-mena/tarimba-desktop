@@ -1,0 +1,17 @@
+C:\Projects\_TarimbaPresence\obj\Debug\net10.0-windows\TarimbaPresence.csproj.AssemblyReference.cache
+C:\Projects\_TarimbaPresence\obj\Debug\net10.0-windows\TarimbaPresence.GeneratedMSBuildEditorConfig.editorconfig
+C:\Projects\_TarimbaPresence\obj\Debug\net10.0-windows\TarimbaPresence.AssemblyInfoInputs.cache
+C:\Projects\_TarimbaPresence\obj\Debug\net10.0-windows\TarimbaPresence.AssemblyInfo.cs
+C:\Projects\_TarimbaPresence\obj\Debug\net10.0-windows\TarimbaPresence.csproj.CoreCompileInputs.cache
+C:\Projects\_TarimbaPresence\bin\Debug\net10.0-windows\TarimbaPresence.exe
+C:\Projects\_TarimbaPresence\bin\Debug\net10.0-windows\TarimbaPresence.deps.json
+C:\Projects\_TarimbaPresence\bin\Debug\net10.0-windows\TarimbaPresence.runtimeconfig.json
+C:\Projects\_TarimbaPresence\bin\Debug\net10.0-windows\TarimbaPresence.dll
+C:\Projects\_TarimbaPresence\bin\Debug\net10.0-windows\TarimbaPresence.pdb
+C:\Projects\_TarimbaPresence\bin\Debug\net10.0-windows\FontAwesome.Sharp.dll
+C:\Projects\_TarimbaPresence\obj\Debug\net10.0-windows\TarimbaP.FE31FC22.Up2Date
+C:\Projects\_TarimbaPresence\obj\Debug\net10.0-windows\TarimbaPresence.dll
+C:\Projects\_TarimbaPresence\obj\Debug\net10.0-windows\refint\TarimbaPresence.dll
+C:\Projects\_TarimbaPresence\obj\Debug\net10.0-windows\TarimbaPresence.pdb
+C:\Projects\_TarimbaPresence\obj\Debug\net10.0-windows\TarimbaPresence.genruntimeconfig.cache
+C:\Projects\_TarimbaPresence\obj\Debug\net10.0-windows\ref\TarimbaPresence.dll

@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet restore *)",
+      "PowerShell($paths = @\\(\"C:\\\\Program Files\\\\Microsoft Visual Studio\", \"C:\\\\Program Files \\(x86\\)\\\\Microsoft Visual Studio\", \"C:\\\\Windows\\\\Microsoft.NET\"\\); foreach \\($p in $paths\\) { if \\(Test-Path $p\\) { Write-Host \"Found: $p\"; ls $p | Select-Object Name } })",
+      "PowerShell(ls \"C:\\\\Program Files \\(x86\\)\\\\Microsoft Visual Studio\\\\\")",
+      "PowerShell(ls \"C:\\\\Program Files\\\\Microsoft Visual Studio\\\\\" -ErrorAction SilentlyContinue)",
+      "PowerShell(ls \"C:\\\\Program Files\\\\dotnet\\\\\" -ErrorAction SilentlyContinue)",
+      "PowerShell(dotnet --version)",
+      "PowerShell($env:PATH = [System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"User\"\\); dotnet --version)",
+      "PowerShell($env:PATH = [System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"User\"\\); cd \"C:\\\\Projects\\\\_TarimbaPresence\"; dotnet restore 2>&1)",
+      "PowerShell($env:PATH = [System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"User\"\\); cd \"C:\\\\Projects\\\\_TarimbaPresence\"; dotnet build 2>&1)",
+      "PowerShell(Get-ChildItem \"$env:USERPROFILE\\\\.nuget\\\\packages\\\\fontawesome.sharp\\\\6.3.0\\\\lib\\\\\" | Format-Table Name)",
+      "PowerShell($env:PATH = [System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"User\"\\); cd \"C:\\\\Projects\\\\_TarimbaPresence\"; Start-Process \"bin\\\\Debug\\\\net10.0-windows\\\\TarimbaPresence.exe\")",
+      "PowerShell($env:PATH = [System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"User\"\\); dotnet build \"C:\\\\Projects\\\\_TarimbaPresence\\\\TarimbaPresence.csproj\" 2>&1)",
+      "PowerShell($env:PATH = [System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"User\"\\); Stop-Process -Name \"TarimbaPresence\" -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1; dotnet build \"C:\\\\Projects\\\\_TarimbaPresence\\\\TarimbaPresence.csproj\" 2>&1 | Select-String -Pattern \"error|warning|succeeded|failed\" | Select-Object -Last 10)",
+      "PowerShell($env:PATH = [System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"User\"\\); Start-Process \"C:\\\\Projects\\\\_TarimbaPresence\\\\bin\\\\Debug\\\\net10.0-windows\\\\TarimbaPresence.exe\")",
+      "PowerShell($env:PATH = [System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"User\"\\); Stop-Process -Name \"TarimbaPresence\" -Force -ErrorAction SilentlyContinue; Start-Sleep -Milliseconds 500; dotnet build \"C:\\\\Projects\\\\_TarimbaPresence\\\\TarimbaPresence.csproj\" 2>&1 | Select-String \"error|warning|succeeded|failed\" | Select-Object -Last 8)",
+      "Bash(dotnet build *)",
+      "PowerShell($env:PATH = $env:PATH + \";C:\\\\Program Files\\\\dotnet\"; cd \"c:\\\\Projects\\\\_TarimbaPresence\"; & \"C:\\\\Program Files\\\\dotnet\\\\dotnet.exe\" build 2>&1)",
+      "PowerShell(& \"C:\\\\Program Files\\\\dotnet\\\\dotnet.exe\" build \"c:\\\\Projects\\\\_TarimbaPresence\\\\TarimbaPresence.csproj\" 2>&1)",
+      "PowerShell(Stop-Process -Name \"TarimbaPresence\" -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(& \"C:\\\\Program Files\\\\dotnet\\\\dotnet.exe\" publish \"c:\\\\Projects\\\\_TarimbaPresence\\\\TarimbaPresence.csproj\" -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true 2>&1)",
+      "PowerShell(Get-ChildItem \"c:\\\\Projects\\\\_TarimbaPresence\\\\bin\\\\Release\\\\net10.0-windows\\\\win-x64\\\\publish\\\\\" | Select-Object Name, @{N='Size \\(MB\\)';E={[math]::Round\\($_.Length/1MB,1\\)}})",
+      "PowerShell(Get-ChildItem \"c:\\\\Projects\\\\_TarimbaPresence\\\\bin\\\\Release\\\\net10.0-windows\\\\win-x64\\\\publish\\\\\" -Force | ForEach-Object { \"$\\($_.Name\\)  $\\([math]::Round\\($_.Length/1MB,1\\)\\) MB\" })",
+      "PowerShell(& \"C:\\\\Program Files\\\\dotnet\\\\dotnet.exe\" publish \"c:\\\\Projects\\\\_TarimbaPresence\\\\TarimbaPresence.csproj\" -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o \"c:\\\\Projects\\\\_TarimbaPresence\\\\bin\\\\Release\\\\net10.0-windows\\\\win-x64\\\\publish\" 2>&1)",
+      "PowerShell(Get-Item \"c:\\\\Projects\\\\_TarimbaPresence\\\\bin\\\\Release\\\\net10.0-windows\\\\win-x64\\\\publish\\\\TarimbaPresence.exe\" | Select-Object Name, @{N='Size MB';E={[math]::Round\\($_.Length/1MB,1\\)}}, LastWriteTime)"
+    ]
+  }
+}

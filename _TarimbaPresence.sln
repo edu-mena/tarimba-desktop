@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TarimbaPresence", "TarimbaPresence.csproj", "{AE0DF816-01B4-8949-410F-FEF573F7098F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AE0DF816-01B4-8949-410F-FEF573F7098F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AE0DF816-01B4-8949-410F-FEF573F7098F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AE0DF816-01B4-8949-410F-FEF573F7098F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AE0DF816-01B4-8949-410F-FEF573F7098F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D24BECD0-63FD-41B5-92D0-A4EE82B3FCD8}
+	EndGlobalSection
+EndGlobal
