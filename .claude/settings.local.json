@@ -24,7 +24,12 @@
       "PowerShell(Get-ChildItem \"c:\\\\Projects\\\\_TarimbaPresence\\\\bin\\\\Release\\\\net10.0-windows\\\\win-x64\\\\publish\\\\\" | Select-Object Name, @{N='Size \\(MB\\)';E={[math]::Round\\($_.Length/1MB,1\\)}})",
       "PowerShell(Get-ChildItem \"c:\\\\Projects\\\\_TarimbaPresence\\\\bin\\\\Release\\\\net10.0-windows\\\\win-x64\\\\publish\\\\\" -Force | ForEach-Object { \"$\\($_.Name\\)  $\\([math]::Round\\($_.Length/1MB,1\\)\\) MB\" })",
       "PowerShell(& \"C:\\\\Program Files\\\\dotnet\\\\dotnet.exe\" publish \"c:\\\\Projects\\\\_TarimbaPresence\\\\TarimbaPresence.csproj\" -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o \"c:\\\\Projects\\\\_TarimbaPresence\\\\bin\\\\Release\\\\net10.0-windows\\\\win-x64\\\\publish\" 2>&1)",
-      "PowerShell(Get-Item \"c:\\\\Projects\\\\_TarimbaPresence\\\\bin\\\\Release\\\\net10.0-windows\\\\win-x64\\\\publish\\\\TarimbaPresence.exe\" | Select-Object Name, @{N='Size MB';E={[math]::Round\\($_.Length/1MB,1\\)}}, LastWriteTime)"
+      "PowerShell(Get-Item \"c:\\\\Projects\\\\_TarimbaPresence\\\\bin\\\\Release\\\\net10.0-windows\\\\win-x64\\\\publish\\\\TarimbaPresence.exe\" | Select-Object Name, @{N='Size MB';E={[math]::Round\\($_.Length/1MB,1\\)}}, LastWriteTime)",
+      "PowerShell(Start-Process \"c:\\\\Projects\\\\_TarimbaPresence\\\\bin\\\\Release\\\\net10.0-windows\\\\win-x64\\\\publish\\\\TarimbaPresence.exe\")",
+      "PowerShell(Start-Process \"c:\\\\Projects\\\\_TarimbaPresence\\\\bin\\\\Debug\\\\net10.0-windows\\\\TarimbaPresence.exe\")",
+      "PowerShell($env:PYTHONIOENCODING=\"utf-8\"; python \"c:\\\\Projects\\\\_TarimbaPresence\\\\database\\\\generate.py\" 2>&1)",
+      "PowerShell(Get-ChildItem \"c:\\\\Projects\\\\_TarimbaPresence\\\\database\\\\\" -Recurse | Select-Object Name, @{N='KB';E={[math]::Round\\($_.Length/1KB,1\\)}})",
+      "PowerShell(Get-ChildItem \"c:\\\\Projects\\\\_TarimbaPresence\\\\database\\\\\" -Recurse | ForEach-Object { \"$\\($_.Name\\)  $\\([math]::Round\\($_.Length/1KB,1\\)\\) KB\" })"
     ]
   }
 }

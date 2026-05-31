@@ -483,3 +483,4 @@ c:\Projects\_TarimbaPresence\obj\Release\net10.0-windows\win-x64\refint\TarimbaP
 c:\Projects\_TarimbaPresence\obj\Release\net10.0-windows\win-x64\TarimbaPresence.pdb
 c:\Projects\_TarimbaPresence\obj\Release\net10.0-windows\win-x64\TarimbaPresence.genruntimeconfig.cache
 c:\Projects\_TarimbaPresence\obj\Release\net10.0-windows\win-x64\ref\TarimbaPresence.dll
+c:\Projects\_TarimbaPresence\obj\Release\net10.0-windows\win-x64\TarimbaPresence.sourcelink.json

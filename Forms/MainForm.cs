@@ -175,20 +175,18 @@ public class MainForm : Form
         };
         pnlBottom.Controls.Add(lblVer);
 
-        // ORDEM CORRECTA: DockStyle.Top empilha na ordem de adição (1º = topo).
-        // pnlBottom (Bottom) vai ao fundo; pnlLogo vem primeiro entre os Top.
         pnlSidebar.Controls.AddRange(new Control[]
         {
-            pnlBottom,        // DockStyle.Bottom → sempre no fundo
-            pnlLogo,          // DockStyle.Top    → primeiro = topo da sidebar
-            lblNav,           // DockStyle.Top    → abaixo do logo
-            spacer,
-            btnDashboard,
-            btnAlunos,
-            btnProfessores,
-            btnHorarios,
+            pnlBottom,
+            btnConfig,
             btnRelatorios,
-            btnConfig
+            btnHorarios,
+            btnProfessores,
+            btnAlunos,
+            btnDashboard,
+            spacer,
+            lblNav,
+            pnlLogo
         });
 
         // NÃO adicionar ao form aqui — será adicionado ao TableLayoutPanel em BuildMainArea()

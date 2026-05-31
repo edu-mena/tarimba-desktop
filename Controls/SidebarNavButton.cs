@@ -16,7 +16,7 @@ public class SidebarNavButton : IconButton
     public new string? Text
     {
         get => base.Text;
-        set => base.Text = "   " + value;
+        set => base.Text = "        " + value; // ~10px gap between icon and label
     }
 
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]

@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "c:\\Projects\\_TarimbaPresence\\TarimbaPresence.csproj": {}
+    "C:\\Projects\\_TarimbaPresence\\TarimbaPresence.csproj": {}
   },
   "projects": {
-    "c:\\Projects\\_TarimbaPresence\\TarimbaPresence.csproj": {
+    "C:\\Projects\\_TarimbaPresence\\TarimbaPresence.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "c:\\Projects\\_TarimbaPresence\\TarimbaPresence.csproj",
+        "projectUniqueName": "C:\\Projects\\_TarimbaPresence\\TarimbaPresence.csproj",
         "projectName": "TarimbaPresence",
-        "projectPath": "c:\\Projects\\_TarimbaPresence\\TarimbaPresence.csproj",
+        "projectPath": "C:\\Projects\\_TarimbaPresence\\TarimbaPresence.csproj",
         "packagesPath": "C:\\Users\\Mena\\.nuget\\packages\\",
-        "outputPath": "c:\\Projects\\_TarimbaPresence\\obj\\",
+        "outputPath": "C:\\Projects\\_TarimbaPresence\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Mena\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -49,12 +49,6 @@
             "FontAwesome.Sharp": {
               "target": "Package",
               "version": "[6.3.0, )"
-            },
-            "Microsoft.NET.ILLink.Tasks": {
-              "suppressParent": "All",
-              "target": "Package",
-              "version": "[10.0.8, )",
-              "autoReferenced": true
             }
           },
           "imports": [
@@ -68,20 +62,6 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
-          "downloadDependencies": [
-            {
-              "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
-              "version": "[10.0.8, 10.0.8]"
-            },
-            {
-              "name": "Microsoft.NETCore.App.Runtime.win-x64",
-              "version": "[10.0.8, 10.0.8]"
-            },
-            {
-              "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
-              "version": "[10.0.8, 10.0.8]"
-            }
-          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
@@ -381,11 +361,6 @@
             "System.Xml.XPath": "(,4.3.32767]",
             "System.Xml.XPath.XDocument": "(,5.0.32767]"
           }
-        }
-      },
-      "runtimes": {
-        "win-x64": {
-          "#import": []
         }
       }
     }

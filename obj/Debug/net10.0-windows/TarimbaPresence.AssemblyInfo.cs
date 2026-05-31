@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TarimbaPresence")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f137b61034a0ceb03c0898e120b854a6210dfc65")]
 [assembly: System.Reflection.AssemblyProductAttribute("TarimbaPresence")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TarimbaPresence")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
