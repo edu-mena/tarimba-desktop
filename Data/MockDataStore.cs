@@ -378,4 +378,19 @@ public static class MockDataStore
         }
         return result;
     }
+
+    // Adicione esta lista logo abaixo das outras listas existentes (como a de Professores)
+    // Lista de contas de professor (para login)
+    public static List<ContaProfessor> ContasProfessor = new List<ContaProfessor>
+    {
+        new ContaProfessor
+        {
+            Id = 1,
+            ProfessorId = 1,         // deve ser o Id de um professor que já existe
+            Email = "mjsantos@tarimba3.ao",
+            PasswordHash = "1234",   // senha temporária simples por agora
+            Ativo = true,
+            PrimeiroLogin = false
+        }
+    };
 }

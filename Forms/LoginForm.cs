@@ -1,6 +1,8 @@
 using System.Drawing.Drawing2D;
 using FontAwesome.Sharp;
 using TarimbaPresence.Helpers;
+using TarimbaPresence.Services;
+using TarimbaPresence.Models;
 
 namespace TarimbaPresence.Forms;
 
@@ -307,7 +309,7 @@ public class LoginForm : Form
         // ── Campo utilizador ───────────────────────────────────────────────
         var lblUser = MakeFieldLabel("Utilizador", 36, 106);
         pnlUserWrap = MakeInputWrapper(36, 126, out txtUsername);
-        txtUsername.PlaceholderText = "ex: admin";
+        txtUsername.PlaceholderText = "ex: admin ou  professor.tarimba3@gmail.com";
         txtUsername.Text = MOCK_USER;
 
         // ── Campo password ─────────────────────────────────────────────────
@@ -542,19 +544,35 @@ public class LoginForm : Form
             return;
         }
 
-        if (user != MOCK_USER || pass != MOCK_PASS)
+        // Usar o serviço de autenticação
+        var auth     = new AutenticacaoService();
+        var resultado = auth.FazerLogin(user, pass);
+
+        if (resultado == null)
         {
             ShowError("Utilizador ou palavra-passe incorrectos.");
-            // Shake animation
             ShakeButton();
             return;
+        }
+
+        // Guardar quem fez login para o MainForm saber
+        if (resultado is string admin && admin == "ADMIN")
+        {
+            // É o administrador
+            Program.UtilizadorAtual = "ADMIN";
+            Program.ContaProfessorAtual = null;
+        }
+        else if (resultado is ContaProfessor conta)
+        {
+            // É um professor
+            Program.UtilizadorAtual = "PROFESSOR";
+            Program.ContaProfessorAtual = conta;
         }
 
         // Login OK → abre o MainForm
         DialogResult = DialogResult.OK;
         Close();
     }
-
     private void ShowError(string msg)
     {
         lblError.Text    = "⚠  " + msg;

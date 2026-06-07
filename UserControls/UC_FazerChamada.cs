@@ -67,8 +67,23 @@ public class UC_FazerChamada : UserControl
         dtpData.ValueChanged               += (_, _) => LoadChamada();
 
         // Populate and trigger initial cascade: turma → disciplinas → chamada
-        foreach (var t in MockDataStore.Turmas)
+        // Se for professor, mostrar apenas as suas turmas
+        var turmasParaMostrar = MockDataStore.Turmas.AsEnumerable();
+
+        if (Program.UtilizadorAtual == "PROFESSOR" && Program.ContaProfessorAtual != null)
+        {
+            var turmasDoProf = MockDataStore.AtribuicaoDisciplinas
+                .Where(a => a.ProfessorId == Program.ContaProfessorAtual.ProfessorId)
+                .Select(a => a.TurmaId)
+                .Distinct()
+                .ToHashSet();
+
+            turmasParaMostrar = turmasParaMostrar.Where(t => turmasDoProf.Contains(t.Id));
+        }
+
+        foreach (var t in turmasParaMostrar)
             cmbTurma.Items.Add(t);
+
         if (cmbTurma.Items.Count > 0)
             cmbTurma.SelectedIndex = 0;
 

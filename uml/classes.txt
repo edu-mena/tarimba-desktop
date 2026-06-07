@@ -1,0 +1,341 @@
+Sistema de Classes UML para TarimbaPresence
+
+1. Entidades de Domínio
+
+Usuario (abstrato)
+- Id : int
+- NomeCompleto : string
+- Email : string
+- Telefone : string
+- Ativo : bool
+- Role : UsuarioRole
+- DataCriacao : DateTime
+- Autenticar(email, senha) : bool
+
+Administrador : Usuario
+- EnviarRelatorioPorEmail(relatorio, destinatario)
+- CriarContaProfessor(professor, senhaTemporaria)
+- UploadRelatorioPresenca(arquivo)
+- VerificarRelatorioAluno(alunoId)
+- EnviarRelatorioPorWhatsApp(relatorio, numero)
+
+Professor : Usuario
+- Turmas : List<Turma>
+- Disciplinas : List<Disciplina>
+- Horarios : List<Horario>
+- AbrirChamada(listaId)
+- FecharChamada(listaId)
+- MarcarPresenca(presenca)
+- GerarRelatorioAulas() : RelatorioPresenca
+- ReceberSenhaTemporaria() : void
+
+EncarregadoEducacao : Usuario
+- Alunos : List<Aluno>
+- ReceberRelatorioViaWhatsApp(relatorio)
+
+Aluno
+- Id : int
+- NumeroProcesso : string
+- NomeCompleto : string
+- Sexo : string
+- DataNascimento : DateTime
+- TurmaId : string
+- Classe : string
+- Ativo : bool
+- Idade : int
+- HistoricoPresencas : List<Presenca>
+
+Curso (enum)
+- ContabilidadeEGestao
+- InformaticaDeGestao
+- CienciasEconomicasEJuridicas
+- CienciasFisicasEBiologicas
+
+Disciplina
+- Id : int
+- Nome : string
+- ClasseMinima : int
+- ClasseMaxima : int
+- Curso : Curso?
+
+Turma
+- Id : string
+- Sala : int
+- Turno : Turno
+- Classe : int
+- Curso : Curso?
+- DirectorDeTurmaId : int?
+- Nome : string
+- NomeCurto : string
+
+Turno (enum)
+- Manha
+- Tarde
+- Noite
+
+Horario
+- Id : int
+- TurmaId : string
+- DisciplinaId : int
+- DiaDaSemana : int
+- Aula : int
+
+AtribuicaoDisciplina
+- Id : int
+- TurmaId : string
+- DisciplinaId : int
+- ProfessorId : int
+
+StatusPresenca (enum)
+- Presente
+- Falta
+- Justificada
+
+Presenca
+- Id : int
+- AlunoId : int
+- TurmaId : string
+- DisciplinaId : int
+- Data : DateTime
+- Status : StatusPresenca
+- Observacao : string?
+- StatusTexto : string
+
+ChamadaPresenca
+- Id : int
+- TurmaId : string
+- DisciplinaId : int
+- ProfessorId : int
+- DataAbertura : DateTime
+- DataFechamento : DateTime?
+- Status : ChamadaStatus
+- Presencas : List<Presenca>
+- Abrir() : void
+- Fechar() : void
+- AdicionarPresenca(presenca) : void
+
+ChamadaStatus (enum)
+- Aberta
+- Fechada
+
+RelatorioPresenca
+- Id : int
+- ProfessorId : int
+- TurmaId : string
+- DisciplinaId : int
+- PeriodoInicio : DateTime
+- PeriodoFim : DateTime
+- Presencas : List<Presenca>
+- TotalPresentes : int
+- TotalFaltas : int
+- TotalJustificadas : int
+- GerarResumo() : string
+
+RelatorioAluno
+- Id : int
+- AlunoId : int
+- TurmaId : string
+- PeriodoInicio : DateTime
+- PeriodoFim : DateTime
+- Presencas : List<Presenca>
+- TotalPresentes : int
+- TotalFaltas : int
+- TotalJustificadas : int
+- Observacoes : string
+
+ContaProfessor
+- Id : int
+- ProfessorId : int
+- Email : string
+- SenhaHash : string
+- SenhaTemporaria : string?
+- DataExpiracaoSenhaTemporaria : DateTime?
+- Status : ContaStatus
+- EnviarSenhaPorEmail() : void
+- AtualizarSenha(senhaNova) : void
+
+ContaStatus (enum)
+- Ativa
+- Pendente
+- Bloqueada
+
+2. Serviços de Aplicação
+
+AutenticacaoService
+- FazerLogin(email, senha) : Usuario
+- EnviarSenhaTemporariaProfessor(professorEmail) : void
+- VerificarPermissao(usuario, acao) : bool
+
+ProfessorService
+- CriarProfessor(professor) : Professor
+- AtualizarProfessor(professor) : void
+- ObterProfessorPorId(id) : Professor
+- ObterTurmasDoProfessor(professorId) : List<Turma>
+- ObterHorariosDoProfessor(professorId) : List<Horario>
+- AbrirChamada(professorId, turmaId, disciplinaId) : ChamadaPresenca
+- FecharChamada(chamadaId) : void
+
+ChamadaService
+- CriarChamada(professorId, turmaId, disciplinaId) : ChamadaPresenca
+- FecharChamada(chamadaId) : void
+- MarcarPresenca(chamadaId, alunoId, status, observacao) : Presenca
+
+RelatorioService
+- GerarRelatorioProfessor(professorId, periodo) : RelatorioPresenca
+- GerarRelatorioAluno(alunoId, periodo) : RelatorioAluno
+- ExportarRelatorioParaDocumento(relatorio) : DocumentoDados
+- ValidarUploadRelatorio(arquivo) : bool
+
+UploadService
+- ReceberArquivoRelatorio(arquivo) : bool
+- ProcessarRelatorio(arquivo) : void
+
+NotificacaoService
+- EnviarEmail(destinatario, assunto, corpo, anexos)
+- EnviarWhatsApp(destinatario, mensagem, anexos)
+- EnviarRelatorioParaAdministrador(relatorio)
+- EnviarRelatorioParaEncarregado(relatorioAluno, telefone)
+
+EmailService : NotificacaoService
+- ConfiguracaoSMTP : SmtpConfig
+- EnviarEmail(destinatario, assunto, corpo, anexos)
+- EnviarSenhaProfessor(professor, senhaTemporaria)
+
+WhatsAppService : NotificacaoService
+- ApiUrl : string
+- Token : string
+- EnviarWhatsApp(destinatario, mensagem, anexos)
+
+3. Repositórios / Persistência
+
+IRepository<T>
+- ObterPorId(id) : T
+- ObterTodos() : List<T>
+- Inserir(entidade) : void
+- Atualizar(entidade) : void
+- Remover(id) : void
+
+AlunoRepository : IRepository<Aluno>
+ProfessorRepository : IRepository<Professor>
+TurmaRepository : IRepository<Turma>
+DisciplinaRepository : IRepository<Disciplina>
+HorarioRepository : IRepository<Horario>
+PresencaRepository : IRepository<Presenca>
+ChamadaRepository : IRepository<ChamadaPresenca>
+RelatorioRepository : IRepository<RelatorioPresenca>
+ContaProfessorRepository : IRepository<ContaProfessor>
+AtribuicaoDisciplinaRepository : IRepository<AtribuicaoDisciplina>
+
+DataStore / DatabaseContext
+- Alunos : List<Aluno>
+- Professores : List<Professor>
+- Turmas : List<Turma>
+- Disciplinas : List<Disciplina>
+- Horarios : List<Horario>
+- Presencas : List<Presenca>
+- Chamadas : List<ChamadaPresenca>
+- Relatorios : List<RelatorioPresenca>
+- ContasProfessor : List<ContaProfessor>
+- Atribuicoes : List<AtribuicaoDisciplina>
+
+4. UI e Controles
+
+LoginForm
+- TextBoxEmail
+- TextBoxSenha
+- BotaoLogin
+- AutenticarUsuario()
+
+MainForm
+- MenuPrincipal
+- PainelConteudo
+- NavegarPara(componente)
+
+UC_Dashboard
+- MostrarResumoDePresencas()
+- MostrarAtividadesRecentes()
+
+UC_FazerChamada
+- SelecionarTurma()
+- SelecionarDisciplina()
+- AbrirChamada()
+- FecharChamada()
+- MarcarPresenca()
+
+UC_Horarios
+- ExibirGradeHoraria(professorId)
+
+UC_Professores
+- GerenciarProfessores()
+- CriarContaProfessor()
+- ExibirListaProfessores()
+
+UC_Alunos
+- ExibirListaAlunosPorTurma()
+- BuscarAluno()
+
+UC_Relatorios
+- ExibirRelatoriosGerados()
+- FiltrarPorProfessorOuAluno()
+- ExportarRelatorio()
+
+UC_Configuracoes
+- ConfigurarEmailSMTP()
+- ConfigurarWhatsApp()
+- GerenciarUsuarios()
+
+RoundedPanel
+SidebarNavButton
+StatCard
+
+5. Classes de Suporte e Utilitários
+
+EmailTemplate
+- Assunto : string
+- Corpo : string
+- Anexos : List<string>
+
+DocumentoDados
+- NomeArquivo : string
+- Conteudo : byte[]
+- Formato : string
+
+SenhaGenerator
+- GerarSenhaTemporaria() : string
+
+HashHelper
+- CriarHash(senha) : string
+- VerificarHash(senha, hash) : bool
+
+CsvParser
+- LerArquivoCsv(caminho) : List<RelatorioPresenca>
+- ValidarFormato(caminho) : bool
+
+PdfGenerator
+- GerarDocumentoRelatorio(relatorio) : DocumentoDados
+
+6. Classes de Segurança e Configuração
+
+UsuarioRole (enum)
+- Administrador
+- Professor
+- EncarregadoEducacao
+
+ConfiguracaoSistema
+- SmtpHost : string
+- SmtpPort : int
+- EmailRemetente : string
+- WhatsAppApiUrl : string
+- WhatsAppToken : string
+- CaminhoUploadRelatorios : string
+
+Resumo
+
+O sistema completo inclui:
+- modelo de contas com herança: Usuario -> Administrador / Professor / EncarregadoEducacao;
+- entidades escolares: Aluno, Turma, Disciplina, Curso, Horario, AtribuicaoDisciplina;
+- presença e chamados: Presenca, ChamadaPresenca, RelatorioPresenca, RelatorioAluno;
+- serviços de aplicação: AutenticacaoService, ProfessorService, ChamadaService, RelatorioService, NotificacaoService;
+- persistência: repositórios, DataStore / DatabaseContext;
+- interface: forms e user controls para login, dashboard, gestão, lista de chamada e relatórios;
+- infra de notificação: EmailService, WhatsAppService, Documentos, upload e parsing.

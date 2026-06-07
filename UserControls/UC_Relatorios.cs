@@ -189,9 +189,39 @@ public class UC_Relatorios : UserControl
         var btnExport = UIHelper.MakeSecondaryButton("↓  Exportar CSV", 150, 36);
         btnExport.Top  = 28;
         btnExport.Click += (_, _) =>
-            MessageBox.Show("Funcionalidade de exportação disponível em versão futura.",
-                            "Exportar", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        {
+            var sfd = new SaveFileDialog
+            {
+                Title      = "Guardar Relatório CSV",
+                Filter     = "Ficheiro CSV (*.csv)|*.csv",
+                FileName   = $"relatorio_{DateTime.Today:yyyyMMdd}.csv"
+            };
 
+            if (sfd.ShowDialog() != DialogResult.OK) return;
+
+            try
+            {
+                var servico    = new TarimbaPresence.Services.RelatorioService();
+                var exportacao = new TarimbaPresence.Services.ExportacaoService();
+
+                var relatorios = servico.GerarRelatorioGeral();
+                exportacao.ExportarRelatorioAlunos(relatorios, sfd.FileName);
+
+                MessageBox.Show(
+                    $"✓  Relatório exportado com sucesso!\n{sfd.FileName}",
+                    "Exportação Concluída",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Erro ao exportar: {ex.Message}",
+                    "Erro",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        };
         pnl.SizeChanged += (_, _) => { btnExport.Left = pnl.Width - btnExport.Width; };
         pnl.Controls.AddRange(new Control[]
             { lblTurma, cmbTurmaFiltro, lblDisc, cmbDisciplinaFiltro, lblPer, cmbPeriodo, btnExport });

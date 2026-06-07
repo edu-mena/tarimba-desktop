@@ -3,6 +3,7 @@ using FontAwesome.Sharp;
 using TarimbaPresence.Controls;
 using TarimbaPresence.Helpers;
 using TarimbaPresence.UserControls;
+using TarimbaPresence.Models;
 
 namespace TarimbaPresence.Forms;
 
@@ -32,13 +33,15 @@ public class MainForm : Form
     private Panel pnlAvatar     = null!;
 
     // ── UserControls (lazy) ────────────────────────────────────────────────
-    private UC_Dashboard?    _ucDashboard;
-    private UC_Alunos?       _ucAlunos;
-    private UC_Professores?  _ucProfessores;
-    private UC_Horarios?     _ucHorarios;
-    private UC_Relatorios?   _ucRelatorios;
-    private UC_Configuracoes?_ucConfig;
-    private UserControl?     _currentUC;
+    private UC_Dashboard?         _ucDashboard;
+    private UC_Alunos?            _ucAlunos;
+    private UC_Professores?       _ucProfessores;
+    private UC_Horarios?          _ucHorarios;
+    private UC_Relatorios?        _ucRelatorios;
+    private UC_Configuracoes?     _ucConfig;
+    
+    private UC_DashboardProfessor? _ucDashboardProf;
+    private UserControl?          _currentUC;
 
     // ══════════════════════════════════════════════════════════════════════
     public MainForm()
@@ -46,7 +49,13 @@ public class MainForm : Form
         BuildForm();
         BuildSidebar();
         BuildMainArea();
-        Navigate(btnDashboard);
+        AjustarMenuParaPerfil();
+
+        // Se for professor, abre o dashboard do professor
+        if (Program.UtilizadorAtual == "PROFESSOR")
+            Navigate(btnHorarios);
+        else
+            Navigate(btnDashboard);
     }
 
     // ── Forma ──────────────────────────────────────────────────────────────
@@ -62,6 +71,15 @@ public class MainForm : Form
         FormBorderStyle = FormBorderStyle.Sizable;
     }
 
+    private void AjustarMenuParaPerfil()
+    {
+        bool isAdmin = Program.UtilizadorAtual == "ADMIN";
+
+        // Menus que só o admin vê
+        btnAlunos.Visible      = isAdmin;
+        btnProfessores.Visible = isAdmin;
+        btnConfig.Visible      = isAdmin;
+    }
     // ══════════════════════════════════════════════════════════════════════
     // SIDEBAR
     // ══════════════════════════════════════════════════════════════════════
@@ -433,9 +451,23 @@ public class MainForm : Form
 
     private static string GetGreeting()
     {
-        int h = DateTime.Now.Hour;
-        return h < 12 ? "Bom dia, Admin"
-             : h < 18 ? "Boa tarde, Admin"
-                      : "Boa noite, Admin";
+        int h    = DateTime.Now.Hour;
+        string nome;
+
+        if (Program.UtilizadorAtual == "PROFESSOR" && Program.ContaProfessorAtual != null)
+        {
+            // Buscar o nome do professor pelo Id
+            var prof = TarimbaPresence.Data.MockDataStore.Professores
+                .FirstOrDefault(p => p.Id == Program.ContaProfessorAtual.ProfessorId);
+            nome = prof?.NomeCompleto.Split(' ')[0] ?? "Professor";
+        }
+        else
+        {
+            nome = "Admin";
+        }
+
+        return h < 12 ? $"Bom dia, {nome}"
+            : h < 18 ? $"Boa tarde, {nome}"
+                    : $"Boa noite, {nome}";
     }
 }

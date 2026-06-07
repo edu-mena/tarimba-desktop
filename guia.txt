@@ -1,0 +1,141 @@
+Guia de Implementação - Nível de Acesso Professor
+
+1. Visão Geral do Sistema Atual
+
+Arquivos principais e estrutura:
+- Program.cs / TarimbaPresence.csproj: aplicação WinForms .NET 10.
+- Forms/: telas de interface principal e login.
+- UserControls/: controles de interface para dashboard, chamadas, horários, professores, alunos, relatórios e configurações.
+- Models/: entidades de domínio atuais: Aluno, Professor, Turma, Disciplina, Horario, Presenca, AtribuicaoDisciplina, Curso, Turno.
+- Controls/: componentes visuais reutilizáveis.
+- Data/: armazenamento mock com dados em memória.
+- database/: scripts SQL e geradores de dados.
+- uml/: documentação UML, incluindo classes e estrutura prevista.
+
+1.1. O que o sistema já faz hoje
+
+- Login: existe uma tela de login (`Forms/LoginForm.cs`) com credenciais mock de administrador (`admin` / `1234`).
+- Navegação: após login, abre `MainForm` com menu lateral para Início, Alunos, Professores, Horários, Relatórios e Configurações.
+- Gestão de alunos: `UC_Alunos` permite cadastrar, editar e limpar registros de alunos, selecionar turma/classe e visualizar lista de alunos.
+- Gestão de professores: `UC_Professores` permite adicionar/editar professores, ativar/inativar, listar professores e atribuir disciplinas a turmas.
+- Horários: `UC_Horarios` exibe a grelha semanal por turma e permite atribuir ou limpar disciplinas em slots de dia/aula.
+- Registo de presença: `UC_FazerChamada` permite selecionar turma, disciplina e data, marcar cada aluno como Presente/Falta/Justificada e gravar registros em memória.
+- Relatórios: `UC_Relatorios` exibe métricas de presença, filtro por turma/disciplinas/período e lista de resultados; inclui botão de exportação com mensagem de recurso futuro.
+- Configurações: `UC_Configuracoes` permite editar informações da escola, detalhes do administrador, preferências de tema e notificações com interface de formulário.
+- Dados mock: `Data/MockDataStore.cs` contém listas de professores, turmas, disciplinas, alunos, atribuições, presenças e horários pré-carregados.
+
+1.2. Como o fluxo atual funciona
+
+- O usuário abre o aplicativo e entra na credencial de administrador.
+- `LoginForm` valida apenas as credenciais mock e abre o `MainForm`.
+- `MainForm` carrega os controles de usuário sob demanda e mantém o menu lateral.
+- O administrador usa as abas para gerenciar dados e registar presenças.
+- Os dados são mantidos em memória no `MockDataStore`; não há persistência real para além da sessão atual.
+- A geração de relatórios é apenas visual e estatística; não há exportação de ficheiros funcional nem envio de notificações implementados.
+
+1.3. Limitações atuais importantes
+
+- Não há autenticação de múltiplos perfis: somente administrador via credenciais dummy.
+- Não há conta real de professor nem workflow de criação de senha e email.
+- O envio de email e WhatsApp ainda não existe no código atual.
+- O upload de relatórios para atualizar a base de dados não está implementado.
+- O sistema usa dados mock (`MockDataStore`) em vez de banco de dados persistente.
+
+2. Objetivo da Extensão
+
+Adicionar um fluxo completo de acesso Professor e de geração/receção de relatórios:
+- administrador cria conta de professor e envia senha por email;
+- professor autentica-se no sistema;
+- professor vê grelha de horários, turmas e listas de alunos por turma;
+- professor abre/fecha chamadas de presença e marca presenças/faltas;
+- sistema gera relatórios de presenças e faltas;
+- administrador recebe relatórios em documento de dados por email;
+- administrador faz upload do relatório para atualizar a base de dados;
+- administrador vê relatório de cada aluno;
+- administrador envia relatório ao encarregado via WhatsApp automaticamente.
+
+3. Estrutura UML e Modelagem
+
+Classes previstas:
+- Usuario (abstrata) com Admin, Professor e EncarregadoEducacao.
+- ContaProfessor para credenciais, senha temporária e estado.
+- ChamadaPresenca para abrir/fechar lista e agrupar Presencas.
+- RelatorioPresenca e RelatorioAluno para sumarização de dados.
+- Serviços: AutenticacaoService, ProfessorService, ChamadaService, RelatorioService, NotificacaoService, EmailService, WhatsAppService, UploadService.
+- Repositórios: IRepository<T> e implementações para Aluno, Professor, Turma, Disciplina, Horario, Presenca, ChamadaPresenca, RelatorioPresenca, ContaProfessor, AtribuicaoDisciplina.
+- Utilitários: HashHelper, SenhaGenerator, PdfGenerator, CsvParser, DocumentoDados.
+
+4. Passos para Implementação
+
+4.1. Criar o modelo de usuário e acesso de professor
+- Definir `Usuario` abstrato ou base com campos comuns.
+- Adicionar enum `UsuarioRole` com Administrador, Professor e EncarregadoEducacao.
+- Criar `ContaProfessor` com senha hash, senha temporária, estado de ativação e métodos de envio/atualização.
+- Ajustar `Professor` para incluir email, telefone, lista de turmas e disciplinas.
+
+4.2. Implementar autenticação e criação de contas
+- Criar `AutenticacaoService` com `FazerLogin(email, senha)` e `VerificarPermissao(usuario, acao)`.
+- Criar método de administrador para `CriarContaProfessor(...)` e gerar senha temporária.
+- Implementar envio de email via `EmailService` para senha inicial.
+- Atualizar `LoginForm` para suportar login de professor.
+
+4.3. Disponibilizar visão de horários e turmas para o professor
+- Criar serviço `ProfessorService` com `ObterTurmasDoProfessor` e `ObterHorariosDoProfessor`.
+- Atualizar `UC_Horarios` e/ou `UC_Dashboard` para exibir grade do professor.
+- Criar ou adaptar UI para seleção de turma/disciplina e exibição de lista de alunos.
+
+4.4. Implementar gestão de chamadas de presença
+- Criar `ChamadaPresenca` com propriedades de abertura, fechamento e lista de `Presenca`.
+- Criar `ChamadaService` com métodos `CriarChamada`, `FecharChamada`, `MarcarPresenca`.
+- Criar `UC_FazerChamada` ou estender o existente para abrir/fechar chamada e marcar alunos.
+- Garantir que presenças sejam registradas com `StatusPresenca`.
+
+4.5. Gerar relatórios de presença e envio para administrador
+- Criar `RelatorioPresenca` e `RelatorioAluno` com totais de presentes, faltas e justificadas.
+- Criar `RelatorioService` para gerar relatórios por professor, turma ou aluno.
+- Criar exportação para `DocumentoDados` em formato CSV/PDF.
+- Notificar administrador via `NotificacaoService` quando relatório for gerado.
+
+4.6. Upload e atualização de base de dados
+- Criar `UploadService` para receber arquivos de relatório do administrador.
+- Processar upload e mapear dados para entidades `Presenca` e relatórios.
+- Atualizar a base de dados local ou mock via repositórios.
+- Criar UI em `UC_Configuracoes` ou `UC_Relatorios` para upload de documentos.
+
+4.7. Envio automático de relatórios via WhatsApp
+- Criar `WhatsAppService` com integração de API e método `EnviarWhatsApp(destinatario, mensagem, anexos)`.
+- Implementar `NotificacaoService.EnviarRelatorioParaEncarregado(relatorioAluno, telefone)`.
+- Criar interface para configuração de API WhatsApp no sistema e selecionar contactos de encarregados.
+
+4.8. Visão do administrador
+- Adicionar funcionalidade para administrador listar relatórios por aluno e professor.
+- Exibir histórico de upload e status de envio para encarregados.
+- Manter controle de contas de professores, contas ativas/pending/blocos.
+
+5. Dependências e Arquivos Relevantes
+
+- `Models/`: novas classes e enums.
+- `Forms/LoginForm.cs`: login e autenticação.
+- `UserControls/UC_Horarios.cs`: exibição da grelha de horários.
+- `UserControls/UC_FazerChamada.cs`: controle de chamada de presença.
+- `UserControls/UC_Relatorios.cs`: relatórios e exportação.
+- `UserControls/UC_Professores.cs`: gestão de professores e criação de contas.
+- `Helpers/ThemeHelper.cs`, `Helpers/UIHelper.cs`: possivelmente reutilizados para novas telas.
+- `database/api_prompt.md`, `database/tarimba3.sql`: referência de dados e scripts.
+
+6. Recomendações de Implementação
+
+- Comece pela autenticação e criação de contas de professor antes de atacar a UI.
+- Modele o fluxo de chamada de presença como entidade independente (`ChamadaPresenca`).
+- Mantenha separação entre domínio, serviços e interface.
+- Use uma camada de repositório para facilitar testes e transição futura para banco real.
+- Documente cada nova classe no `uml/classes.txt` e adicione diagramas de sequência se quiser detalhar o fluxo de login e relatórios.
+
+7. Próximos passos sugeridos
+
+- Validar o modelo de dados com o administrador/usuário.
+- Criar protótipo rápido da UI de professor.
+- Implementar cadastro de professor e envio de senha via email.
+- Implementar abertura/fechamento de chamada e registro de presenças.
+- Criar geração de relatórios e upload no admin.
+- Adicionar notificações automáticas via WhatsApp.
