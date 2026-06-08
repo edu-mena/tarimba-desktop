@@ -1,7 +1,7 @@
 using System.Drawing.Drawing2D;
 using FontAwesome.Sharp;
 using TarimbaPresence.Controls;
-using TarimbaPresence.Data;
+using TarimbaPresence.Database;
 using TarimbaPresence.Helpers;
 using TarimbaPresence.Models;
 
@@ -21,6 +21,9 @@ public class UC_Alunos : UserControl
     private Label       lblAvatarInitials = null!;
     private TextBox     txtSearchList = null!;
 
+    private readonly DatabaseService _db = new();
+    private List<Turma> _turmas = new();
+    private List<Aluno> _alunos = new();
     private Aluno? _editingAluno;
 
     public UC_Alunos()
@@ -79,6 +82,8 @@ public class UC_Alunos : UserControl
 
         Controls.AddRange(new Control[] { pnlSplit, pnlHeader });
         ResumeLayout(true);
+        LoadTurmas();
+        LoadAlunos();
     }
 
     // ── Form card (left panel) ─────────────────────────────────────────────
@@ -139,9 +144,6 @@ public class UC_Alunos : UserControl
         cmbSexo     = MakeComboField(fields, "Sexo", 136, new[] { "Masculino", "Feminino" });
         dtpNasc     = MakeDateField(fields, "Data de Nascimento", 204);
         cmbTurma    = MakeComboField(fields, "Turma", 272, Array.Empty<string>());
-        foreach (var t in MockDataStore.Turmas) cmbTurma.Items.Add(t);
-        if (cmbTurma.Items.Count > 0) cmbTurma.SelectedIndex = 0;
-
         cmbClasse   = MakeComboField(fields, "Classe", 340,
                           new[] { "1ª Classe","2ª Classe","3ª Classe","4ª Classe","5ª Classe","6ª Classe",
                                   "7ª Classe","8ª Classe","9ª Classe","10ª Classe","11ª Classe","12ª Classe","13ª Classe" });
@@ -314,8 +316,6 @@ public class UC_Alunos : UserControl
         dgv.Columns.Add(new DataGridViewTextBoxColumn
             { Name = "Idade",    HeaderText = "Idade", Width = 64 });
 
-        PopulateGrid(MockDataStore.Alunos);
-
         dgv.CellDoubleClick += (_, e) =>
         {
             if (e.RowIndex >= 0) EditFromGrid(e.RowIndex);
@@ -331,7 +331,7 @@ public class UC_Alunos : UserControl
         dgv.Rows.Clear();
         foreach (var a in source)
         {
-            var turma = MockDataStore.Turmas.FirstOrDefault(t => t.Id == a.TurmaId);
+            var turma = _turmas.FirstOrDefault(t => t.Id == a.TurmaId);
             dgv.Rows.Add(a.NumeroProcesso, a.NomeCompleto, a.Sexo,
                          turma?.Nome ?? "—", a.Classe, a.Idade.ToString());
         }
@@ -342,10 +342,10 @@ public class UC_Alunos : UserControl
         var q = txtSearchList.Text.Trim().ToLower();
         if (string.IsNullOrEmpty(q))
         {
-            PopulateGrid(MockDataStore.Alunos);
+            PopulateGrid(_alunos);
             return;
         }
-        PopulateGrid(MockDataStore.Alunos.Where(a =>
+        PopulateGrid(_alunos.Where(a =>
             a.NomeCompleto.ToLower().Contains(q) ||
             a.NumeroProcesso.ToLower().Contains(q) ||
             a.Classe.ToLower().Contains(q)));
@@ -354,7 +354,7 @@ public class UC_Alunos : UserControl
     private void EditFromGrid(int rowIndex)
     {
         var processo = dgv.Rows[rowIndex].Cells["Processo"].Value?.ToString();
-        var aluno    = MockDataStore.Alunos.FirstOrDefault(a => a.NumeroProcesso == processo);
+        var aluno    = _alunos.FirstOrDefault(a => a.NumeroProcesso == processo);
         if (aluno == null) return;
 
         _editingAluno     = aluno;
@@ -385,36 +385,50 @@ public class UC_Alunos : UserControl
 
         if (_editingAluno != null)
         {
-            // Update existing
             _editingAluno.NomeCompleto    = txtNome.Text.Trim();
             _editingAluno.NumeroProcesso  = txtProcesso.Text.Trim();
             _editingAluno.Sexo            = cmbSexo.Text.StartsWith("M") ? "M" : "F";
             _editingAluno.DataNascimento  = dtpNasc.Value;
-            _editingAluno.TurmaId         = turma?.Id ?? "";
+            _editingAluno.TurmaId         = turma?.Id ?? string.Empty;
             _editingAluno.Classe          = cmbClasse.Text;
+            _db.AtualizarAluno(_editingAluno);
         }
         else
         {
-            // New aluno
             var novo = new Aluno
             {
-                Id              = MockDataStore.Alunos.Count == 0 ? 1 : MockDataStore.Alunos.Max(a => a.Id) + 1,
                 NumeroProcesso  = txtProcesso.Text.Trim(),
                 NomeCompleto    = txtNome.Text.Trim(),
                 Sexo            = cmbSexo.Text.StartsWith("M") ? "M" : "F",
                 DataNascimento  = dtpNasc.Value,
-                TurmaId         = turma?.Id ?? "",
+                TurmaId         = turma?.Id ?? string.Empty,
                 Classe          = cmbClasse.Text,
                 Ativo           = true
             };
-            MockDataStore.Alunos.Add(novo);
+            novo.Id = _db.CriarAluno(novo);
         }
 
-        PopulateGrid(MockDataStore.Alunos);
+        LoadAlunos();
         ClearForm();
 
         MessageBox.Show("Aluno guardado com sucesso.", "Sucesso",
             MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
+    private void LoadTurmas()
+    {
+        cmbTurma.Items.Clear();
+        _turmas = _db.ObterTodasTurmas();
+        foreach (var t in _turmas)
+            cmbTurma.Items.Add(t);
+        if (cmbTurma.Items.Count > 0)
+            cmbTurma.SelectedIndex = 0;
+    }
+
+    private void LoadAlunos()
+    {
+        _alunos = _db.ObterTodosAlunos();
+        PopulateGrid(_alunos);
     }
 
     private void ClearForm()

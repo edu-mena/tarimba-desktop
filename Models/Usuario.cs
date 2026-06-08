@@ -1,13 +1,9 @@
-namespace TarimbaPresence.Models
+namespace TarimbaPresence.Models;
+
+public abstract class Usuario
 {
-    public abstract class Usuario
-    {
-        public int Id { get; set; }
-
-        public string Nome { get; set; }
-
-        public string Email { get; set; }
-
-        public UsuarioRole Role { get; set; }
-    }
+    public int    Id    { get; set; }
+    public string Nome  { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public UsuarioRole Role { get; set; }
 }

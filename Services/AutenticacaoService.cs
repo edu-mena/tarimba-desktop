@@ -1,30 +1,27 @@
-using TarimbaPresence.Data;
+using TarimbaPresence.Database;
 using TarimbaPresence.Models;
 
-namespace TarimbaPresence.Services
+namespace TarimbaPresence.Services;
+
+public class AutenticacaoService
 {
-    public class AutenticacaoService
+    private readonly DatabaseService _db = new();
+
+    public object? FazerLogin(string email, string senha)
     {
-        // Este método recebe email e senha e devolve quem é o utilizador
-        public object? FazerLogin(string email, string senha)
-        {
-            // Verificar se é o administrador
-            if (email == "admin" && senha == "1234")
-                return "ADMIN";
+        // Verificar administrador
+        if (email == "admin" && senha == "1234")
+            return "ADMIN";
 
-            // Verificar se é um professor
-            var conta = MockDataStore.ContasProfessor
-                .FirstOrDefault(x =>
-                    x.Email == email &&
-                    x.PasswordHash == senha &&
-                    x.Ativo);
+        // Verificar professor na base de dados
+        var conta = _db.ObterContaPorEmail(email);
 
-            // Se encontrou uma conta de professor, devolve essa conta
-            if (conta != null)
-                return conta;
-
-            // Se não encontrou nada, devolve null (ninguém)
+        if (conta == null || !conta.Ativo)
             return null;
-        }
+
+        if (conta.PasswordHash != senha)
+            return null;
+
+        return conta;
     }
 }

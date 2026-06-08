@@ -1,25 +1,24 @@
-using TarimbaPresence.Data;
+using TarimbaPresence.Database;
 using TarimbaPresence.Models;
 
 namespace TarimbaPresence.Services;
 
 public class RelatorioService
 {
+    private readonly DatabaseService _db = new();
+
     // Gera relatório de um aluno específico
     public RelatorioAluno GerarRelatorioAluno(int alunoId, DateTime? de = null, DateTime? ate = null)
     {
-        var aluno = MockDataStore.Alunos.FirstOrDefault(a => a.Id == alunoId);
+        var aluno = _db.ObterTodosAlunos().FirstOrDefault(a => a.Id == alunoId);
         if (aluno == null) return new RelatorioAluno();
 
-        var turma = MockDataStore.Turmas.FirstOrDefault(t => t.Id == aluno.TurmaId);
+        var turma = _db.ObterTurma(aluno.TurmaId);
 
-        var registos = MockDataStore.Presencas
-            .Where(p => p.AlunoId == alunoId);
+        var presencas = _db.ObterPresencasPorAluno(alunoId);
 
-        if (de  != null) registos = registos.Where(p => p.Data.Date >= de.Value.Date);
-        if (ate != null) registos = registos.Where(p => p.Data.Date <= ate.Value.Date);
-
-        var lista = registos.ToList();
+        if (de  != null) presencas = presencas.Where(p => p.Data.Date >= de.Value.Date).ToList();
+        if (ate != null) presencas = presencas.Where(p => p.Data.Date <= ate.Value.Date).ToList();
 
         return new RelatorioAluno
         {
@@ -27,19 +26,19 @@ public class RelatorioService
             NomeAluno      = aluno.NomeCompleto,
             NumeroProcesso = aluno.NumeroProcesso,
             NomeTurma      = turma?.Nome ?? "—",
-            Presentes      = lista.Count(p => p.Status == StatusPresenca.Presente),
-            Faltas         = lista.Count(p => p.Status == StatusPresenca.Falta),
-            Justificadas   = lista.Count(p => p.Status == StatusPresenca.Justificada)
+            Presentes      = presencas.Count(p => p.Status == StatusPresenca.Presente),
+            Faltas         = presencas.Count(p => p.Status == StatusPresenca.Falta),
+            Justificadas   = presencas.Count(p => p.Status == StatusPresenca.Justificada)
         };
     }
 
     // Gera relatório de todos os alunos de uma turma
     public RelatorioPresenca GerarRelatorioTurma(string turmaId, DateTime? de = null, DateTime? ate = null)
     {
-        var turma = MockDataStore.Turmas.FirstOrDefault(t => t.Id == turmaId);
+        var turma = _db.ObterTurma(turmaId);
         if (turma == null) return new RelatorioPresenca();
 
-        var alunos = MockDataStore.GetAlunosDaTurma(turmaId);
+        var alunos = _db.ObterAlunosDaTurma(turmaId);
         var relatoriosAlunos = alunos
             .Select(a => GerarRelatorioAluno(a.Id, de, ate))
             .ToList();
@@ -60,7 +59,7 @@ public class RelatorioService
     // Gera relatório de todos os alunos do sistema
     public List<RelatorioAluno> GerarRelatorioGeral(DateTime? de = null, DateTime? ate = null)
     {
-        return MockDataStore.Alunos
+        return _db.ObterTodosAlunos()
             .Select(a => GerarRelatorioAluno(a.Id, de, ate))
             .OrderByDescending(r => r.Faltas)
             .ToList();

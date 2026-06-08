@@ -1,6 +1,6 @@
 using FontAwesome.Sharp;
 using TarimbaPresence.Controls;
-using TarimbaPresence.Data;
+using TarimbaPresence.Database;
 using TarimbaPresence.Helpers;
 using TarimbaPresence.Models;
 
@@ -16,7 +16,7 @@ public class UC_FazerChamada : UserControl
 
     private bool _loadingDisciplinas;
     private readonly List<(Aluno Aluno, StatusPresenca Status)> _registos = new();
-
+    private readonly DatabaseService _db = new();
     public UC_FazerChamada()
     {
         SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
@@ -67,19 +67,9 @@ public class UC_FazerChamada : UserControl
         dtpData.ValueChanged               += (_, _) => LoadChamada();
 
         // Populate and trigger initial cascade: turma → disciplinas → chamada
-        // Se for professor, mostrar apenas as suas turmas
-        var turmasParaMostrar = MockDataStore.Turmas.AsEnumerable();
-
-        if (Program.UtilizadorAtual == "PROFESSOR" && Program.ContaProfessorAtual != null)
-        {
-            var turmasDoProf = MockDataStore.AtribuicaoDisciplinas
-                .Where(a => a.ProfessorId == Program.ContaProfessorAtual.ProfessorId)
-                .Select(a => a.TurmaId)
-                .Distinct()
-                .ToHashSet();
-
-            turmasParaMostrar = turmasParaMostrar.Where(t => turmasDoProf.Contains(t.Id));
-        }
+        var turmasParaMostrar = Program.UtilizadorAtual == "PROFESSOR" && Program.ContaProfessorAtual != null
+            ? _db.ObterTurmasDoProfessor(Program.ContaProfessorAtual.ProfessorId).AsEnumerable()
+            : _db.ObterTodasTurmas().AsEnumerable();
 
         foreach (var t in turmasParaMostrar)
             cmbTurma.Items.Add(t);
@@ -197,7 +187,7 @@ public class UC_FazerChamada : UserControl
 
         _loadingDisciplinas = true;
         cmbDisciplina.Items.Clear();
-        foreach (var d in MockDataStore.GetDisciplinasDaTurma(turma))
+        foreach (var d in _db.ObterDisciplinasDaTurma(turma))
             cmbDisciplina.Items.Add(d);
         _loadingDisciplinas = false;
 
@@ -224,15 +214,19 @@ public class UC_FazerChamada : UserControl
         }
 
         _registos.Clear();
-        var alunos = MockDataStore.GetAlunosDaTurma(turma.Id);
+        var alunos = _db.ObterAlunosDaTurma(turma.Id);
+
+        // Buscar presenças já registadas para este dia/turma/disciplina
+        var presencasHoje = _db.ObterPresencas(
+            turmaId: turma.Id,
+            de:  dtpData.Value.Date,
+            ate: dtpData.Value.Date);
 
         foreach (var a in alunos)
         {
-            var existing = MockDataStore.Presencas.FirstOrDefault(p =>
-                p.AlunoId      == a.Id            &&
-                p.TurmaId      == turma.Id         &&
-                p.DisciplinaId == disciplina.Id    &&
-                p.Data.Date    == dtpData.Value.Date);
+            var existing = presencasHoje.FirstOrDefault(p =>
+                p.AlunoId      == a.Id         &&
+                p.DisciplinaId == disciplina.Id);
             _registos.Add((a, existing?.Status ?? StatusPresenca.Presente));
         }
 
@@ -261,27 +255,17 @@ public class UC_FazerChamada : UserControl
 
         SyncGridToRegistos();
 
-        MockDataStore.Presencas.RemoveAll(p =>
-            p.TurmaId      == turma.Id       &&
-            p.DisciplinaId == disciplina.Id  &&
-            p.Data.Date    == dtpData.Value.Date);
-
-        int nextId = MockDataStore.Presencas.Count == 0
-            ? 1
-            : MockDataStore.Presencas.Max(p => p.Id) + 1;
-
-        foreach (var (aluno, status) in _registos)
+        // Preparar lista de presenças para guardar na base de dados
+        var paraGuardar = _registos.Select(r => new Presenca
         {
-            MockDataStore.Presencas.Add(new Presenca
-            {
-                Id           = nextId++,
-                AlunoId      = aluno.Id,
-                TurmaId      = turma.Id,
-                DisciplinaId = disciplina.Id,
-                Data         = dtpData.Value.Date,
-                Status       = status
-            });
-        }
+            AlunoId      = r.Aluno.Id,
+            TurmaId      = turma.Id,
+            DisciplinaId = disciplina.Id,
+            Data         = dtpData.Value.Date,
+            Status       = r.Status
+        }).ToList();
+
+        _db.GuardarPresencas(paraGuardar);
 
         MessageBox.Show(
             $"✓  {_registos.Count} registos guardados com sucesso.\n{turma.Nome}  |  {disciplina.Nome}",

@@ -1,12 +1,13 @@
 using TarimbaPresence.Controls;
-using TarimbaPresence.Data;
 using TarimbaPresence.Helpers;
 using TarimbaPresence.Models;
+using TarimbaPresence.Database;
 
 namespace TarimbaPresence.UserControls;
 
 public class UC_Professores : UserControl
 {
+    private readonly DatabaseService _db;
     // Left panel
     private DataGridView dgvProfessores = null!;
 
@@ -30,6 +31,8 @@ public class UC_Professores : UserControl
 
     public UC_Professores()
     {
+        _db = new DatabaseService();
+
         SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
         BackColor  = ThemeHelper.ContentBg;
         AutoScroll = false;
@@ -166,9 +169,12 @@ public class UC_Professores : UserControl
         btnGuardar.Left = 90; btnGuardar.Top = 138;
         btnGuardar.Click += OnGuardar;
 
-        pnlFields.Controls.AddRange(new Control[]
-            { lblN, txtNome, lblE, txtEmail, lblT, txtTelefone, chkAtivo, btnGuardar });
+        var btnRedefinir = UIHelper.MakeSecondaryButton("🔑 Redefinir Senha", 150, 36);
+        btnRedefinir.Left = 230; btnRedefinir.Top = 138;
+        btnRedefinir.Click += OnRedefinirSenha;
 
+        pnlFields.Controls.AddRange(new Control[]
+            { lblN, txtNome, lblE, txtEmail, lblT, txtTelefone, chkAtivo, btnGuardar, btnRedefinir });
         formCard.Controls.AddRange(new Control[] { pnlFields, lblFormTitle });
         pnlFormOuter.Controls.Add(formCard);
 
@@ -203,7 +209,7 @@ public class UC_Professores : UserControl
 
         // Wire turma combo AFTER disc combo exists
         cmbTurmaAtrib.SelectedIndexChanged += (_, _) => LoadDisciplinasParaTurma();
-        foreach (var t in MockDataStore.Turmas) cmbTurmaAtrib.Items.Add(t);
+        foreach (var t in _db.ObterTodasTurmas()) cmbTurmaAtrib.Items.Add(t);
         if (cmbTurmaAtrib.Items.Count > 0) cmbTurmaAtrib.SelectedIndex = 0;
 
         pnlAssignForm.Controls.AddRange(new Control[]
@@ -250,10 +256,14 @@ public class UC_Professores : UserControl
     private void LoadProfessores()
     {
         dgvProfessores.Rows.Clear();
-        foreach (var p in MockDataStore.Professores)
+
+        foreach (var p in _db.ObterTodosProfessores())
         {
-            int count = MockDataStore.AtribuicaoDisciplinas.Count(a => a.ProfessorId == p.Id);
-            dgvProfessores.Rows.Add(p.Id, p.NomeCompleto, count, p.Ativo ? "Ativo" : "Inativo");
+            dgvProfessores.Rows.Add(
+                p.Id,
+                p.NomeCompleto,
+                0,
+                p.Ativo ? "Ativo" : "Inativo");
         }
     }
 
@@ -262,10 +272,10 @@ public class UC_Professores : UserControl
         dgvAtribuicoes.Rows.Clear();
         if (_selectedProfessor == null) return;
 
-        foreach (var a in MockDataStore.AtribuicaoDisciplinas.Where(a => a.ProfessorId == _selectedProfessor.Id))
+        foreach (var a in _db.ObterAtribuicoesPorProfessor(_selectedProfessor.Id))
         {
-            var turma = MockDataStore.Turmas.FirstOrDefault(t => t.Id == a.TurmaId);
-            var disc  = MockDataStore.Disciplinas.FirstOrDefault(d => d.Id == a.DisciplinaId);
+            var turma = _db.ObterTurma(a.TurmaId);
+            var disc  = _db.ObterDisciplinaPorId(a.DisciplinaId);
             if (turma == null || disc == null) continue;
             dgvAtribuicoes.Rows.Add(a.Id, turma.Nome, disc.Nome, turma.NomeClasse, turma.Turno.DisplayText());
         }
@@ -276,7 +286,7 @@ public class UC_Professores : UserControl
         if (cmbDiscAtrib == null) return;
         cmbDiscAtrib.Items.Clear();
         if (cmbTurmaAtrib.SelectedItem is not Turma turma) return;
-        foreach (var d in MockDataStore.GetDisciplinasDaTurma(turma))
+        foreach (var d in _db.ObterDisciplinasDaTurma(turma))
             cmbDiscAtrib.Items.Add(d);
         if (cmbDiscAtrib.Items.Count > 0) cmbDiscAtrib.SelectedIndex = 0;
     }
@@ -318,7 +328,7 @@ public class UC_Professores : UserControl
     {
         if (dgvProfessores.SelectedRows.Count == 0) return;
         var profId = Convert.ToInt32(dgvProfessores.SelectedRows[0].Cells["ProfId"].Value);
-        _selectedProfessor = MockDataStore.Professores.FirstOrDefault(p => p.Id == profId);
+        _selectedProfessor = _db.ObterProfessorPorId(profId);
         _isNewMode         = false;
         FillForm(_selectedProfessor);
         LoadAtribuicoes();
@@ -336,24 +346,55 @@ public class UC_Professores : UserControl
 
         if (_isNewMode)
         {
-            int nextId = MockDataStore.Professores.Count == 0
-                ? 1
-                : MockDataStore.Professores.Max(p => p.Id) + 1;
+            if (string.IsNullOrWhiteSpace(txtEmail.Text))
+            {
+                MessageBox.Show("O email é obrigatório para criar a conta de acesso.",
+                    "Validação", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtEmail.Focus();
+                return;
+            }
 
             var novo = new Professor
             {
-                Id           = nextId,
                 NomeCompleto = txtNome.Text.Trim(),
                 Email        = txtEmail.Text.Trim(),
                 Telefone     = txtTelefone.Text.Trim(),
                 Ativo        = chkAtivo.Checked
             };
-            MockDataStore.Professores.Add(novo);
+            novo.Id = _db.CriarProfessor(novo);
+
+            // Gerar senha automática: primeiro nome + 4 dígitos aleatórios
+            string primeiroNome = novo.NomeCompleto.Split(' ')[0].ToLower();
+            string senha = primeiroNome + new Random().Next(1000, 9999).ToString();
+
+            // Criar conta de login na base de dados
+            var conta = new ContaProfessor
+            {
+                ProfessorId   = novo.Id,
+                Email         = novo.Email,
+                PasswordHash  = senha,
+                Ativo         = true,
+                PrimeiroLogin = true
+            };
+            _db.CriarContaProfessor(conta);
+
             _selectedProfessor = novo;
             _isNewMode = false;
 
             LoadProfessores();
             SelectProfessorInGrid(novo.Id);
+
+            // Mostrar a senha ao administrador
+            MessageBox.Show(
+                $"✓  Professor criado com sucesso!\n\n" +
+                $"Nome:   {novo.NomeCompleto}\n" +
+                $"Email:  {novo.Email}\n" +
+                $"Senha:  {senha}\n\n" +
+                $"Guarde esta senha e entregue ao professor.\n" +
+                $"Ela não será mostrada novamente.",
+                "Conta Criada",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
         }
         else if (_selectedProfessor != null)
         {
@@ -361,6 +402,7 @@ public class UC_Professores : UserControl
             _selectedProfessor.Email        = txtEmail.Text.Trim();
             _selectedProfessor.Telefone     = txtTelefone.Text.Trim();
             _selectedProfessor.Ativo        = chkAtivo.Checked;
+            _db.AtualizarProfessor(_selectedProfessor);
 
             LoadProfessores();
             SelectProfessorInGrid(_selectedProfessor.Id);
@@ -387,16 +429,9 @@ public class UC_Professores : UserControl
         }
 
         // One professor per (turma, discipline) slot
-        MockDataStore.AtribuicaoDisciplinas.RemoveAll(a =>
-            a.TurmaId == turma.Id && a.DisciplinaId == disc.Id);
-
-        int nextId = MockDataStore.AtribuicaoDisciplinas.Count == 0
-            ? 1
-            : MockDataStore.AtribuicaoDisciplinas.Max(a => a.Id) + 1;
-
-        MockDataStore.AtribuicaoDisciplinas.Add(new AtribuicaoDisciplina
+        _db.RemoverAtribuicaoPorTurmaDisciplina(turma.Id, disc.Id);
+        _db.CriarAtribuicao(new AtribuicaoDisciplina
         {
-            Id           = nextId,
             TurmaId      = turma.Id,
             DisciplinaId = disc.Id,
             ProfessorId  = _selectedProfessor.Id
@@ -409,7 +444,7 @@ public class UC_Professores : UserControl
     {
         if (dgvAtribuicoes.SelectedRows.Count == 0) return;
         var atribId = Convert.ToInt32(dgvAtribuicoes.SelectedRows[0].Cells["AtribId"].Value);
-        MockDataStore.AtribuicaoDisciplinas.RemoveAll(a => a.Id == atribId);
+        _db.RemoverAtribuicaoPorId(atribId);
         RefreshCountAndAssignments();
     }
 
@@ -432,5 +467,56 @@ public class UC_Professores : UserControl
                 return;
             }
         }
+    }
+
+    private void OnRedefinirSenha(object? sender, EventArgs e)
+    {
+        if (_selectedProfessor == null || _isNewMode)
+        {
+            MessageBox.Show("Seleccione um professor primeiro.",
+                "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        // Confirmar a ação
+        var confirmar = MessageBox.Show(
+            $"Deseja redefinir a senha de {_selectedProfessor.NomeCompleto}?\n\n" +
+            $"Uma nova senha será gerada automaticamente.",
+            "Confirmar Redefinição",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question);
+
+        if (confirmar != DialogResult.Yes) return;
+
+        // Buscar a conta do professor
+        var conta = _db.ObterContaPorEmail(_selectedProfessor.Email);
+        if (conta == null)
+        {
+            MessageBox.Show(
+                "Este professor não tem conta de acesso criada.\n" +
+                "Guarde o professor primeiro para criar a conta.",
+                "Conta não encontrada",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        // Gerar nova senha
+        string primeiroNome = _selectedProfessor.NomeCompleto.Split(' ')[0].ToLower();
+        string novaSenha    = primeiroNome + new Random().Next(1000, 9999).ToString();
+
+        // Atualizar na base de dados
+        _db.AtualizarSenha(conta.Id, novaSenha);
+
+        // Mostrar ao administrador
+        MessageBox.Show(
+            $"✓  Senha redefinida com sucesso!\n\n" +
+            $"Professor:  {_selectedProfessor.NomeCompleto}\n" +
+            $"Email:      {_selectedProfessor.Email}\n" +
+            $"Nova Senha: {novaSenha}\n\n" +
+            $"Entregue esta senha ao professor.\n" +
+            $"Ela não será mostrada novamente.",
+            "Senha Redefinida",
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Information);
     }
 }

@@ -1,5 +1,5 @@
 using TarimbaPresence.Controls;
-using TarimbaPresence.Data;
+using TarimbaPresence.Database;
 using TarimbaPresence.Helpers;
 using TarimbaPresence.Models;
 
@@ -7,6 +7,7 @@ namespace TarimbaPresence.UserControls;
 
 public class UC_Horarios : UserControl
 {
+    private readonly DatabaseService _db = new();
     private ComboBox     cmbTurma    = null!;
     private DataGridView dgv         = null!;
     private ComboBox     cmbEditDia  = null!;
@@ -75,7 +76,7 @@ public class UC_Horarios : UserControl
         Controls.AddRange(new Control[] { pnlContent, pnlFilter, pnlHeader });
 
         // Populate turma combo after events wired
-        foreach (var t in MockDataStore.Turmas) cmbTurma.Items.Add(t);
+        foreach (var t in _db.ObterTodasTurmas()) cmbTurma.Items.Add(t);
         if (cmbTurma.Items.Count > 0) cmbTurma.SelectedIndex = 0;
 
         ResumeLayout(true);
@@ -156,7 +157,7 @@ public class UC_Horarios : UserControl
         if (cmbEditDisc == null) return;
         cmbEditDisc.Items.Clear();
         if (cmbTurma.SelectedItem is not Turma turma) return;
-        foreach (var d in MockDataStore.GetDisciplinasDaTurma(turma))
+        foreach (var d in _db.ObterDisciplinasDaTurma(turma))
             cmbEditDisc.Items.Add(d);
         if (cmbEditDisc.Items.Count > 0) cmbEditDisc.SelectedIndex = 0;
     }
@@ -171,7 +172,7 @@ public class UC_Horarios : UserControl
         }
 
         string[] times = GetTimesForTurno(turma.Turno);
-        int discCount  = MockDataStore.GetDisciplinasDaTurma(turma).Count;
+        int discCount  = _db.ObterDisciplinasDaTurma(turma).Count;
         lblStatus.Text = $"{turma.Turno.DisplayText()}  |  {discCount} disciplinas";
 
         dgv.Rows.Clear();
@@ -188,11 +189,11 @@ public class UC_Horarios : UserControl
 
             for (int dia = 1; dia <= 5; dia++)
             {
-                var h = MockDataStore.GetHorario(turma.Id, dia, aula);
+                var h = _db.ObterHorario(turma.Id, dia, aula);
                 if (h != null)
                 {
-                    var disc = MockDataStore.Disciplinas.FirstOrDefault(d => d.Id == h.DisciplinaId);
-                    var prof = MockDataStore.GetProfessorDaDisciplina(turma.Id, h.DisciplinaId);
+                    var disc = _db.ObterDisciplinaPorId(h.DisciplinaId);
+                    var prof = _db.ObterProfessorDaDisciplina(turma.Id, h.DisciplinaId);
                     string profShort = prof != null ? ShortName(prof.NomeCompleto) : "—";
                     row.Cells[dia].Value = $"{disc?.Nome ?? "—"}\n{profShort}";
                 }
@@ -214,7 +215,7 @@ public class UC_Horarios : UserControl
         cmbEditAula.SelectedIndex = e.RowIndex;
 
         if (cmbTurma.SelectedItem is not Turma turma) return;
-        var h = MockDataStore.GetHorario(turma.Id, e.ColumnIndex, e.RowIndex + 1);
+        var h = _db.ObterHorario(turma.Id, e.ColumnIndex, e.RowIndex + 1);
         if (h == null) return;
 
         for (int i = 0; i < cmbEditDisc.Items.Count; i++)
@@ -235,10 +236,10 @@ public class UC_Horarios : UserControl
         int dia  = e.ColumnIndex;
         int aula = e.RowIndex + 1;
 
-        var h = MockDataStore.GetHorario(turma.Id, dia, aula);
+        var h = _db.ObterHorario(turma.Id, dia, aula);
         if (h == null) { e.CellStyle.BackColor = Color.White; return; }
 
-        var disc = MockDataStore.Disciplinas.FirstOrDefault(d => d.Id == h.DisciplinaId);
+        var disc = _db.ObterDisciplinaPorId(h.DisciplinaId);
         e.CellStyle.BackColor = disc?.Curso switch
         {
             null                                           => Color.FromArgb(219, 234, 254), // azul (transversal)
@@ -266,13 +267,9 @@ public class UC_Horarios : UserControl
         int dia  = cmbEditDia.SelectedIndex  + 1;
         int aula = cmbEditAula.SelectedIndex + 1;
 
-        MockDataStore.Horarios.RemoveAll(h =>
-            h.TurmaId == turma.Id && h.DiaDaSemana == dia && h.Aula == aula);
-
-        int nextId = MockDataStore.Horarios.Count == 0 ? 1 : MockDataStore.Horarios.Max(h => h.Id) + 1;
-        MockDataStore.Horarios.Add(new Horario
+        _db.RemoverHorario(turma.Id, dia, aula);
+        _db.CriarHorario(new Horario
         {
-            Id           = nextId,
             TurmaId      = turma.Id,
             DisciplinaId = disc.Id,
             DiaDaSemana  = dia,
@@ -289,9 +286,7 @@ public class UC_Horarios : UserControl
         int dia  = cmbEditDia.SelectedIndex  + 1;
         int aula = cmbEditAula.SelectedIndex + 1;
 
-        MockDataStore.Horarios.RemoveAll(h =>
-            h.TurmaId == turma.Id && h.DiaDaSemana == dia && h.Aula == aula);
-
+        _db.RemoverHorario(turma.Id, dia, aula);
         LoadHorario();
     }
 

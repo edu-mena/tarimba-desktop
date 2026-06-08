@@ -14,6 +14,8 @@ internal static class Program
     [STAThread]
     static void Main()
     {
+        // Inicializar a base de dados SQLite na primeira execução
+        TarimbaPresence.Database.DatabaseContext.InicializarBancoDeDados();
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
         Application.SetHighDpiMode(HighDpiMode.SystemAware);

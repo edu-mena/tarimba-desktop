@@ -1,13 +1,14 @@
 using System.Drawing.Drawing2D;
 using FontAwesome.Sharp;
 using TarimbaPresence.Controls;
-using TarimbaPresence.Data;
+using TarimbaPresence.Database;
 using TarimbaPresence.Helpers;
 
 namespace TarimbaPresence.UserControls;
 
 public class UC_Dashboard : UserControl
 {
+    private readonly DatabaseService _db = new();
     public UC_Dashboard()
     {
         SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
@@ -61,13 +62,13 @@ public class UC_Dashboard : UserControl
 
         var cards = new (IconChar Icon, string Title, string Value, string Sub, Color Accent, Color AccentBg)[]
         {
-            (IconChar.UserGraduate, "Total de Alunos",   MockDataStore.TotalAlunos.ToString(),
+            (IconChar.UserGraduate, "Total de Alunos",   _db.ContarAlunos().ToString(),
              "matriculados activos",          ThemeHelper.LightBlue,  Color.FromArgb(219,234,254)),
-            (IconChar.CircleCheck,  "Presenças Hoje",    MockDataStore.PresencasHoje.ToString(),
+            (IconChar.CircleCheck,  "Presenças Hoje",    _db.ContarPresencasHoje().ToString(),
              "alunos presentes",              ThemeHelper.Success,    ThemeHelper.SuccessBg),
-            (IconChar.TriangleExclamation, "Faltas Críticas", MockDataStore.FaltasCriticas.ToString(),
+            (IconChar.TriangleExclamation, "Faltas Críticas", _db.ContarFaltasCriticas().ToString(),
              "acima de 25% de faltas",        ThemeHelper.Danger,     ThemeHelper.DangerBg),
-            (IconChar.LayerGroup,   "Turmas Activas",    MockDataStore.TotalTurmas.ToString(),
+            (IconChar.LayerGroup,   "Turmas Activas",    _db.ContarTurmas().ToString(),
              "turmas no sistema",             ThemeHelper.Purple,     ThemeHelper.PurpleBg),
         };
 
@@ -188,20 +189,18 @@ public class UC_Dashboard : UserControl
             AutoScroll = false
         };
 
-        var turmas = MockDataStore.Turmas.Take(8).ToList();
+        var turmas = _db.ObterTodasTurmas().Take(8).ToList();
         int rowH = 32;
 
         for (int i = 0; i < turmas.Count; i++)
         {
             var t       = turmas[i];
-            var alunos  = MockDataStore.GetAlunosDaTurma(t.Id);
+            var alunos  = _db.ObterAlunosDaTurma(t.Id);
             if (alunos.Count == 0) continue;
 
             int total     = alunos.Count;
-            int presentes = MockDataStore.Presencas
-                .Where(p => p.TurmaId == t.Id
-                         && p.Data.Date == DateTime.Today
-                         && p.Status == Models.StatusPresenca.Presente)
+            int presentes = _db.ObterPresencas(t.Id, DateTime.Today, DateTime.Today)
+                .Where(p => p.Status == Models.StatusPresenca.Presente)
                 .Select(p => p.AlunoId).Distinct().Count();
 
             double pct = total > 0 ? (double)presentes / total * 100.0 : 0;
@@ -301,16 +300,16 @@ public class UC_Dashboard : UserControl
             { Name = "Status",   HeaderText = "Status",         Width = 110, FillWeight = 13 });
 
         // Last 15 records
-        var recent = MockDataStore.Presencas
+        var recent = _db.ObterPresencas()
             .OrderByDescending(p => p.Data)
             .Take(15)
             .ToList();
 
         foreach (var p in recent)
         {
-            var aluno = MockDataStore.Alunos.FirstOrDefault(a => a.Id == p.AlunoId);
+            var aluno = _db.ObterTodosAlunos().FirstOrDefault(a => a.Id == p.AlunoId);
             if (aluno == null) continue;
-            var turma = MockDataStore.Turmas.FirstOrDefault(t => t.Id == p.TurmaId);
+            var turma = _db.ObterTurma(p.TurmaId);
             dgv.Rows.Add(aluno.NumeroProcesso, aluno.NomeCompleto,
                          turma?.Nome ?? "—", p.Data.ToString("dd/MM/yyyy"),
                          p.StatusTexto);

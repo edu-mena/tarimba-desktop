@@ -40,7 +40,6 @@ public class MainForm : Form
     private UC_Relatorios?        _ucRelatorios;
     private UC_Configuracoes?     _ucConfig;
     
-    private UC_DashboardProfessor? _ucDashboardProf;
     private UserControl?          _currentUC;
 
     // ══════════════════════════════════════════════════════════════════════
@@ -416,9 +415,38 @@ public class MainForm : Form
             lblDate.Top      = 36;
         };
 
+        // Botão de logout
+        var btnLogout = new Button
+        {
+            Text      = "⏻  Sair",
+            Font      = ThemeHelper.FontSmall,
+            ForeColor = ThemeHelper.DangerText,
+            BackColor = ThemeHelper.DangerBg,
+            FlatStyle = FlatStyle.Flat,
+            Width     = 80,
+            Height    = 30,
+            Cursor    = Cursors.Hand,
+            Top       = (68 - 30) / 2
+        };
+        btnLogout.FlatAppearance.BorderSize = 0;
+        btnLogout.Click += BtnLogout_Click;
+
+        pnlHeader.SizeChanged += (_, _) =>
+        {
+            btnLogout.Left = pnlHeader.Width - btnLogout.Width - 16;
+            // Recalcular posição do avatar e textos com espaço para o botão
+            int rightX = pnlHeader.Width - pnlAvatar.Width - btnLogout.Width - 32;
+            pnlAvatar.Left   = rightX + btnLogout.Width + 16;
+            pnlAvatar.Top    = (68 - pnlAvatar.Height) / 2;
+            lblGreeting.Left = rightX - lblGreeting.Width - 12;
+            lblGreeting.Top  = 16;
+            lblDate.Left     = rightX - Math.Max(lblDate.Width, lblGreeting.Width) - 12;
+            lblDate.Top      = 36;
+        };
+
         pnlHeader.Controls.AddRange(new Control[]
         {
-            lblPageTitle, lblDate, lblGreeting, pnlAvatar
+            lblPageTitle, lblDate, lblGreeting, pnlAvatar, btnLogout
         });
     }
 
@@ -457,8 +485,8 @@ public class MainForm : Form
         if (Program.UtilizadorAtual == "PROFESSOR" && Program.ContaProfessorAtual != null)
         {
             // Buscar o nome do professor pelo Id
-            var prof = TarimbaPresence.Data.MockDataStore.Professores
-                .FirstOrDefault(p => p.Id == Program.ContaProfessorAtual.ProfessorId);
+            var prof = new TarimbaPresence.Database.DatabaseService()
+                .ObterProfessorPorId(Program.ContaProfessorAtual.ProfessorId);
             nome = prof?.NomeCompleto.Split(' ')[0] ?? "Professor";
         }
         else
@@ -469,5 +497,32 @@ public class MainForm : Form
         return h < 12 ? $"Bom dia, {nome}"
             : h < 18 ? $"Boa tarde, {nome}"
                     : $"Boa noite, {nome}";
+    }
+
+    private void BtnLogout_Click(object? sender, EventArgs e)
+    {
+        var confirmar = MessageBox.Show(
+            "Tem a certeza que deseja terminar a sessão?",
+            "Terminar Sessão",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question);
+
+        if (confirmar != DialogResult.Yes) return;
+
+        // Limpar sessão atual
+        Program.UtilizadorAtual     = "";
+        Program.ContaProfessorAtual = null;
+
+        // Abrir o login novamente
+        var login = new LoginForm();
+        if (login.ShowDialog() == DialogResult.OK)
+        {
+            // Recriar o MainForm com o novo utilizador
+            var novoMain = new MainForm();
+            Application.Run(novoMain);
+        }
+
+        // Fechar este MainForm
+        Close();
     }
 }

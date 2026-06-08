@@ -1,4 +1,4 @@
-using TarimbaPresence.Data;
+using TarimbaPresence.Database;
 using TarimbaPresence.Helpers;
 using TarimbaPresence.Models;
 
@@ -6,6 +6,7 @@ namespace TarimbaPresence.UserControls;
 
 public class UC_DashboardProfessor : UserControl
 {
+    private readonly DatabaseService _db = new();
     public UC_DashboardProfessor()
     {
         BackColor  = ThemeHelper.ContentBg;
@@ -33,19 +34,13 @@ public class UC_DashboardProfessor : UserControl
         // Buscar dados do professor logado
         var conta = Program.ContaProfessorAtual;
         var professor = conta != null
-            ? MockDataStore.Professores.FirstOrDefault(p => p.Id == conta.ProfessorId)
+            ? _db.ObterProfessorPorId(conta.ProfessorId)
             : null;
 
         // Turmas do professor
-        var turmasIds = MockDataStore.AtribuicaoDisciplinas
-            .Where(a => a.ProfessorId == professor?.Id)
-            .Select(a => a.TurmaId)
-            .Distinct()
-            .ToList();
-
-        var turmas = MockDataStore.Turmas
-            .Where(t => turmasIds.Contains(t.Id))
-            .ToList();
+        var turmas = professor != null
+            ? _db.ObterTurmasDoProfessor(professor.Id)
+            : new List<Turma>();
 
         // Info do professor
         var lblNome = new Label

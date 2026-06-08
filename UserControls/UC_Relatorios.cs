@@ -1,7 +1,7 @@
 using System.Drawing.Drawing2D;
 using FontAwesome.Sharp;
 using TarimbaPresence.Controls;
-using TarimbaPresence.Data;
+using TarimbaPresence.Database;
 using TarimbaPresence.Helpers;
 using TarimbaPresence.Models;
 
@@ -9,6 +9,7 @@ namespace TarimbaPresence.UserControls;
 
 public class UC_Relatorios : UserControl
 {
+    private readonly DatabaseService _db = new();
     private ComboBox    cmbTurmaFiltro    = null!;
     private ComboBox    cmbDisciplinaFiltro = null!;
     private ComboBox    cmbPeriodo        = null!;
@@ -85,7 +86,7 @@ public class UC_Relatorios : UserControl
              "nos últimos 30 dias",
              ThemeHelper.LightBlue,   Color.FromArgb(219,234,254)),
             ("Total de Registos",
-             MockDataStore.Presencas.Count.ToString(),
+             _db.ObterPresencas().Count.ToString(),
              "registos no sistema",
              ThemeHelper.Purple,      ThemeHelper.PurpleBg),
             ("Dias com Chamada",
@@ -93,7 +94,7 @@ public class UC_Relatorios : UserControl
              "dias lectivos registados",
              ThemeHelper.Success,     ThemeHelper.SuccessBg),
             ("Alunos em Risco",
-             MockDataStore.FaltasCriticas.ToString(),
+             _db.ContarFaltasCriticas().ToString(),
              "mais de 25% de faltas",
              ThemeHelper.Danger,      ThemeHelper.DangerBg),
         };
@@ -161,7 +162,7 @@ public class UC_Relatorios : UserControl
 
         cmbTurmaFiltro = UIHelper.MakeComboBox(160);
         cmbTurmaFiltro.Items.Add("Todas as Turmas");
-        foreach (var t in MockDataStore.Turmas) cmbTurmaFiltro.Items.Add(t.Nome);
+        foreach (var t in _db.ObterTodasTurmas()) cmbTurmaFiltro.Items.Add(t.Nome);
         cmbTurmaFiltro.SelectedIndex = 0;
         cmbTurmaFiltro.Left = 0; cmbTurmaFiltro.Top = 28;
         cmbTurmaFiltro.SelectedIndexChanged += (_, _) => RefreshTable();
@@ -171,7 +172,7 @@ public class UC_Relatorios : UserControl
 
         cmbDisciplinaFiltro = UIHelper.MakeComboBox(180);
         cmbDisciplinaFiltro.Items.Add("Todas as Disciplinas");
-        foreach (var d in MockDataStore.Disciplinas) cmbDisciplinaFiltro.Items.Add(d);
+        foreach (var d in _db.ObterTodasDisciplinas()) cmbDisciplinaFiltro.Items.Add(d);
         cmbDisciplinaFiltro.SelectedIndex = 0;
         cmbDisciplinaFiltro.Left = 178; cmbDisciplinaFiltro.Top = 28;
         cmbDisciplinaFiltro.SelectedIndexChanged += (_, _) => RefreshTable();
@@ -223,9 +224,13 @@ public class UC_Relatorios : UserControl
             }
         };
         pnl.SizeChanged += (_, _) => { btnExport.Left = pnl.Width - btnExport.Width; };
-        pnl.Controls.AddRange(new Control[]
-            { lblTurma, cmbTurmaFiltro, lblDisc, cmbDisciplinaFiltro, lblPer, cmbPeriodo, btnExport });
+        var btnRelatorioAluno = UIHelper.MakeSecondaryButton("👤  Relatório por Aluno", 180, 36);
+        btnRelatorioAluno.Top  = 28;
+        btnRelatorioAluno.Click += (_, _) => AbrirRelatorioAluno();
+        pnl.SizeChanged += (_, _) => { btnRelatorioAluno.Left = pnl.Width - btnExport.Width - btnRelatorioAluno.Width - 12; };
 
+        pnl.Controls.AddRange(new Control[]
+            { lblTurma, cmbTurmaFiltro, lblDisc, cmbDisciplinaFiltro, lblPer, cmbPeriodo, btnRelatorioAluno, btnExport });
         return pnl;
     }
 
@@ -250,7 +255,8 @@ public class UC_Relatorios : UserControl
         dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "Faltas",    HeaderText = "Faltas",          Width = 80  });
         dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "Justif",    HeaderText = "Justificadas",    Width = 110 });
         dgv.Columns.Add(new DataGridViewTextBoxColumn { Name = "Taxa",      HeaderText = "Taxa Presença",   FillWeight = 20 });
-
+        
+        
         dgv.CellFormatting += (_, e) =>
         {
             if (e.ColumnIndex == 6 && e.Value != null)
@@ -268,10 +274,14 @@ public class UC_Relatorios : UserControl
             }
         };
 
+        
+
         card.Controls.Add(dgv);
         pnl.Controls.Add(card);
         return pnl;
     }
+
+    
 
     // ── Risk panel ────────────────────────────────────────────────────────
     private Panel BuildRiskPanel()
@@ -310,15 +320,23 @@ public class UC_Relatorios : UserControl
         };
 
         // Populate risk table
-        var riskAlunos = MockDataStore.Alunos
-            .Select(a => new { Aluno = a, Pct = MockDataStore.GetPercentualFaltas(a.Id) })
+        var presencas = _db.ObterPresencas();
+        var riskAlunos = _db.ObterTodosAlunos()
+            .Select(a =>
+            {
+                var registros = presencas.Where(p => p.AlunoId == a.Id).ToList();
+                double pct = registros.Count == 0
+                    ? 0
+                    : (double)registros.Count(p => p.Status == StatusPresenca.Falta) / registros.Count * 100.0;
+                return new { Aluno = a, Pct = pct };
+            })
             .Where(x => x.Pct > 25)
             .OrderByDescending(x => x.Pct)
             .ToList();
 
         foreach (var r in riskAlunos)
         {
-            var t = MockDataStore.Turmas.FirstOrDefault(t => t.Id == r.Aluno.TurmaId);
+            var t = _db.ObterTurma(r.Aluno.TurmaId);
             dgvRisk.Rows.Add(
                 r.Aluno.NumeroProcesso,
                 r.Aluno.NomeCompleto,
@@ -350,15 +368,15 @@ public class UC_Relatorios : UserControl
             ? null
             : cmbDisciplinaFiltro.SelectedItem as Disciplina;
 
+        var todasTurmas = _db.ObterTodasTurmas();
         var turmas = string.IsNullOrEmpty(turmaFiltro)
-            ? MockDataStore.Turmas
-            : MockDataStore.Turmas.Where(t => t.Nome == turmaFiltro).ToList();
+            ? todasTurmas
+            : todasTurmas.Where(t => t.Nome == turmaFiltro).ToList();
 
         foreach (var t in turmas)
         {
-            var alunos   = MockDataStore.GetAlunosDaTurma(t.Id);
-            var registos = MockDataStore.Presencas
-                .Where(p => p.TurmaId == t.Id && p.Data.Date >= cutoff);
+            var alunos   = _db.ObterAlunosDaTurma(t.Id);
+            var registos = _db.ObterPresencas(t.Id, cutoff, DateTime.Today).AsEnumerable();
 
             if (discFiltro != null)
                 registos = registos.Where(p => p.DisciplinaId == discFiltro.Id);
@@ -379,18 +397,108 @@ public class UC_Relatorios : UserControl
         }
     }
 
-    private static double CalcGlobalPresenca()
+    private double CalcGlobalPresenca()
     {
-        var last30 = MockDataStore.Presencas.Where(p => p.Data.Date >= DateTime.Today.AddDays(-30)).ToList();
+        var last30 = _db.ObterPresencas(null, DateTime.Today.AddDays(-30), DateTime.Today);
         if (last30.Count == 0) return 0;
         return (double)last30.Count(p => p.Status == StatusPresenca.Presente) / last30.Count * 100.0;
     }
 
-    private static int CountDaysWithChamada()
+    private void AbrirRelatorioAluno()
     {
-        return MockDataStore.Presencas
-            .Select(p => p.Data.Date)
-            .Distinct()
-            .Count();
+        // Janela para escolher o aluno
+        var form = new Form
+        {
+            Text = "Selecionar Aluno",
+            Size = new Size(500, 420),
+            StartPosition = FormStartPosition.CenterParent,
+            BackColor = Color.White,
+            MinimizeBox = false,
+            MaximizeBox = false
+        };
+
+        var lblTitulo = new Label
+        {
+            Text = "Escolhe o aluno para ver o relatório:",
+            Font = ThemeHelper.FontSubheading,
+            ForeColor = ThemeHelper.DarkText,
+            AutoSize = true,
+            Left = 16, Top = 16
+        };
+
+        var txtPesquisa = new TextBox
+        {
+            PlaceholderText = "Pesquisar por nome...",
+            Left = 16, Top = 50,
+            Width = 452,
+            Height = 30,
+            Font = ThemeHelper.FontBody
+        };
+
+        var lista = new ListBox
+        {
+            Left = 16, Top = 90,
+            Width = 452, Height = 240,
+            Font = ThemeHelper.FontBody
+        };
+
+        var todosAlunos = _db.ObterTodosAlunos();
+
+        void Filtrar(string texto)
+        {
+            lista.Items.Clear();
+            var filtrados = string.IsNullOrWhiteSpace(texto)
+                ? todosAlunos
+                : todosAlunos.Where(a =>
+                    a.NomeCompleto.Contains(texto, StringComparison.OrdinalIgnoreCase)).ToList();
+            foreach (var a in filtrados)
+            {
+                var turma = _db.ObterTurma(a.TurmaId);
+                lista.Items.Add(new AlunoListItem(a, turma?.Nome ?? "—"));
+            }
+        }
+
+        txtPesquisa.TextChanged += (_, _) => Filtrar(txtPesquisa.Text);
+        Filtrar("");
+
+        var btnVer = new Button
+        {
+            Text = "Ver Relatório",
+            Left = 16, Top = 344,
+            Width = 150, Height = 36,
+            BackColor = ThemeHelper.LightBlue,
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Font = ThemeHelper.FontBody
+        };
+        btnVer.FlatAppearance.BorderSize = 0;
+
+        btnVer.Click += (_, _) =>
+        {
+            if (lista.SelectedItem is not AlunoListItem item) return;
+            form.Close();
+            using var relForm = new TarimbaPresence.Forms.AlunoRelatorioForm(item.Aluno);
+            relForm.ShowDialog(this.FindForm());
+        };
+
+        lista.DoubleClick += (_, _) => btnVer.PerformClick();
+
+        form.Controls.AddRange(new Control[] { lblTitulo, txtPesquisa, lista, btnVer });
+        form.ShowDialog(this.FindForm());
     }
+
+// Classe auxiliar para mostrar alunos na ListBox
+    private class AlunoListItem
+    {
+        public Aluno Aluno { get; }
+        private readonly string _turmaNome;
+        public AlunoListItem(Aluno aluno, string turmaNome) { Aluno = aluno; _turmaNome = turmaNome; }
+        public override string ToString() => $"{Aluno.NomeCompleto}  —  Turma {_turmaNome}";
+    }
+
+    private int CountDaysWithChamada()
+    {
+        return _db.ContarDiasComChamada();
+    }
+
 }
