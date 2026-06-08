@@ -1,2 +1,0 @@
-c:\Projects\_TarimbaPresence\bin\Release\net10.0-windows\win-x64\publish\TarimbaPresence.pdb
-c:\Projects\_TarimbaPresence\bin\Release\net10.0-windows\win-x64\publish\TarimbaPresence.exe
